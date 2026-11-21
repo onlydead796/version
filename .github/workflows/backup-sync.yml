@@ -1,0 +1,30 @@
+name: Automatic Backup to onlydead512
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Mirror branches and tags
+        env:
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+        run: |
+          AUTH=$(printf 'x-access-token:%s' "$BACKUP_TOKEN" | base64 -w 0)
+
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH" \
+            push --force --prune \
+            "https://github.com/onlydead512/${GITHUB_REPOSITORY#*/}.git" \
+            '+refs/heads/*:refs/heads/*' \
+            '+refs/tags/*:refs/tags/*'
